@@ -1,23 +1,30 @@
-# Web Terminal tooling (RHEL8/glibc, includes oc) + Holmes CLI via Python 3.11.
+# Custom Web Terminal image: Python 3.11 (glibc) + oc/kubectl + holmes CLI.
 #
-# Cannot copy CLI from robustadev/holmes: that image is Alpine/musl, while
-# tooling's oc is a glibc binary ("No such file or directory" if mixed).
-ARG BASE_IMAGE=registry.redhat.io/web-terminal/web-terminal-tooling-rhel8:1.8
-FROM ${BASE_IMAGE}
+# Notes:
+# - Web Terminal tooling (RHEL8) has oc but only Python 3.6 via microdnf (no python311 module).
+# - robustadev/holmes is Alpine/musl — RHEL oc cannot run there.
+# - ubi8/python-311 + official OpenShift client tarball is a compatible glibc stack.
+ARG PYTHON_IMAGE=registry.access.redhat.com/ubi8/python-311:1
+FROM ${PYTHON_IMAGE}
 
 USER 0
 
-# holmesgpt on PyPI requires Python >=3.10; tooling's default platform python is 3.6.
+ARG OC_CLIENT_URL=https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz
+
 RUN set -eux; \
-    microdnf -y module enable python311; \
-    microdnf -y install python3.11 python3.11-pip python3.11-setuptools; \
-    microdnf clean all; \
-    python3.11 -m pip install --no-cache-dir --upgrade pip setuptools wheel; \
-    python3.11 -m pip install --no-cache-dir 'holmesgpt==0.43.0'; \
-    ln -sf "$(python3.11 -c 'import shutil; print(shutil.which("holmes"))')" /usr/local/bin/holmes; \
-    holmes version
+    dnf -y install tar gzip findutils; \
+    curl -fsSL -o /tmp/openshift-client-linux.tar.gz "${OC_CLIENT_URL}"; \
+    tar -xzf /tmp/openshift-client-linux.tar.gz -C /usr/local/bin oc kubectl; \
+    rm -f /tmp/openshift-client-linux.tar.gz; \
+    chmod 0755 /usr/local/bin/oc /usr/local/bin/kubectl; \
+    pip install --no-cache-dir 'holmesgpt==0.43.0'; \
+    holmes version; \
+    oc version --client; \
+    dnf clean all
 
 COPY scripts/holmes-demo-env /usr/local/bin/holmes-demo-env
 RUN chmod 0755 /usr/local/bin/holmes-demo-env
 
+# Web Terminal expects a non-root user and a long-running process.
 USER 1001
+CMD ["tail", "-f", "/dev/null"]
