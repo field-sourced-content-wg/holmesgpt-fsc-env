@@ -99,10 +99,22 @@ oc -n holmesgpt annotate hc firing-alerts-probe holmesgpt.dev/rerun=true --overw
 - Prometheus クエリが成功すること（firing 件数は 0 でも >0 でも **pass** が正しい）
 - AlertManager API 専用 CLI と同等ではないこと（見えるのは Prometheus 側）
 
-再実行: `oc -n holmesgpt annotate hc firing-alerts-probe holmesgpt.dev/rerun=true --overwrite`
+再実行（Operator 0.43.0）:
 
-※ 以前の query は「アラートがある＝fail」と弱モデルが早合点しやすかったため、
-  「ツール成功＝pass」の検証用 query に変更済み。
+```bash
+# annotate rerun は Operator バグで失敗する（下記 Pitfalls）。delete → 再作成する。
+oc -n holmesgpt delete hc firing-alerts-probe
+# Argo CD selfHeal で再作成。手動なら:
+# helm template .../holmes-healthcheck | oc apply -f -
+```
+
+※ query は「Prometheus ツール成功＝pass」（firing 件数 >0 でも pass）。
+
+**Pitfalls — `holmesgpt.dev/rerun`（upstream / 経験知）:**  
+Operator 0.43.0 の `on_healthcheck_update` が `on_healthcheck_create(spec=..., **kwargs)` を呼び、
+kopf が渡す `spec` と二重指定になり  
+`got multiple values for keyword argument 'spec'` で再実行が失敗する。  
+CR の定義ミスではない。回避は delete → create。master でも同パターン（※確認時点）。
 
 ### Web Terminal + Holmes CLI
 
