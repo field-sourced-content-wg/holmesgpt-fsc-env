@@ -1,27 +1,22 @@
-# Holmes CLI on top of OpenShift Web Terminal tooling (oc, kubectl, etc.).
-# Built in-cluster via BuildConfig → ImageStream; selected as Web Terminal custom image.
-#
-# Base: official Web Terminal tooling (KCS 6962984 / 7055855 patterns).
+# Holmes CLI on OpenShift Web Terminal tooling.
+# PyPI holmesgpt needs Python >=3.10; the RHEL8 tooling image only has 3.6 via
+# microdnf, so we copy the venv + CLI from the official Holmes image instead.
+ARG HOLMES_IMAGE=docker.io/robustadev/holmes:0.43.0
 ARG BASE_IMAGE=registry.redhat.io/web-terminal/web-terminal-tooling-rhel8:1.8
+
+FROM ${HOLMES_IMAGE} AS holmes
+
 FROM ${BASE_IMAGE}
 
 USER 0
 
-# Prefer pip if present on the tooling image; otherwise install python3-pip.
-RUN set -eux; \
-    if command -v pip3 >/dev/null 2>&1; then \
-      pip3 install --no-cache-dir 'holmesgpt'; \
-    elif command -v microdnf >/dev/null 2>&1; then \
-      microdnf -y install python3 python3-pip && microdnf clean all && \
-      pip3 install --no-cache-dir 'holmesgpt'; \
-    else \
-      dnf -y install python3 python3-pip && dnf clean all && \
-      pip3 install --no-cache-dir 'holmesgpt'; \
-    fi; \
-    holmes --help >/dev/null
+COPY --from=holmes /venv /opt/holmes/venv
+COPY --from=holmes /app /opt/holmes/app
 
+COPY scripts/holmes /usr/local/bin/holmes
 COPY scripts/holmes-demo-env /usr/local/bin/holmes-demo-env
-RUN chmod 0755 /usr/local/bin/holmes-demo-env
+RUN chmod 0755 /usr/local/bin/holmes /usr/local/bin/holmes-demo-env \
+    && /usr/local/bin/holmes version
 
 # Web Terminal tooling runs as non-root (UID 1001).
 USER 1001

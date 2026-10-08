@@ -43,10 +43,11 @@ holmes:
       enabled: true
     kubernetes/logs:
       enabled: true
+    # Disabled: Holmes image has no `oc` binary (toolset init fails with exit 127).
     openshift/core:
-      enabled: true
+      enabled: false
     openshift/logs:
-      enabled: true
+      enabled: false
     robusta:
       enabled: false
     internet:
@@ -67,19 +68,24 @@ holmes:
       memory: 1024Mi
 
 # ============================================================
-# HealthCheck probe (Operator) — firing alerts via Prometheus
+# HealthCheck probe (Operator) — can Prometheus see firing alerts?
 # ============================================================
 healthCheck:
   enabled: true
   name: firing-alerts-probe
   namespace: holmesgpt
   model: litemaas
-  timeout: 120
+  timeout: 180
   mode: monitor
+  # Verification probe: PASS when Prometheus tools work, even if alerts fire.
+  # (Chat API can query ALERTS; a weak model may skip tools and falsely "fail".)
   query: |
-    Using Prometheus, list currently firing alerts (prefer ALERTS{alertstate="firing"}
-    and/or alerting rules with state=firing). Summarize the top issues and likely
-    root causes. If none are firing, say so clearly and treat the check as healthy.
+    You MUST call Prometheus tools before answering (for example
+    execute_prometheus_instant_query with query ALERTS{alertstate="firing"},
+    or list_prometheus_rules with type=alert).
+    PASS if the Prometheus query succeeds. Report how many firing alert series
+    you saw (zero is fine). Do NOT fail merely because alerts are currently firing.
+    FAIL only if Prometheus tools error, time out, or cannot authenticate.
 
 # ============================================================
 # Holmes CLI Web Terminal (BuildConfig → ImageStream)

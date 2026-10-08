@@ -96,10 +96,13 @@ oc -n holmesgpt annotate hc firing-alerts-probe holmesgpt.dev/rerun=true --overw
 
 確認したいこと:
 
-- LLM が Prometheus toolset（`ALERTS` / `list_prometheus_rules` 等）を使ったか
+- Prometheus クエリが成功すること（firing 件数は 0 でも >0 でも **pass** が正しい）
 - AlertManager API 専用 CLI と同等ではないこと（見えるのは Prometheus 側）
 
-※ ツール選択は LLM 任せのため、query を変えて再 annotate するのが有効。
+再実行: `oc -n holmesgpt annotate hc firing-alerts-probe holmesgpt.dev/rerun=true --overwrite`
+
+※ 以前の query は「アラートがある＝fail」と弱モデルが早合点しやすかったため、
+  「ツール成功＝pass」の検証用 query に変更済み。
 
 ### Web Terminal + Holmes CLI
 
