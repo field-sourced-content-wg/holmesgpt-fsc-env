@@ -116,14 +116,25 @@ oc -n openshift-operators get csv | grep -i web-terminal
 2. **イメージビルド**（`holmesgpt` NS の BuildConfig / ImageStream）
 
 ```bash
-oc -n holmesgpt start-build holmes-cli-terminal --follow
-oc -n holmesgpt get is holmes-cli-terminal
-oc -n holmesgpt get cm holmes-cli-terminal-usage -o jsonpath='{.data.README\.txt}'
+oc -n holmesgpt get is holmes-cli-terminal   # TAGS に latest
+oc -n holmesgpt get rolebinding holmes-cli-terminal-openshift-terminal-puller
 ```
 
-3. コンソールで Web Terminal を開き、**Custom image** に次を指定:
+GitOps が `system:image-puller` を `system:serviceaccounts:openshift-terminal` に付与します  
+（無いと `ImagePullBackOff` / `authentication required`）。
+
+3. コンソールで Web Terminal を開く。**Start の前に Image** を押し、次を指定:
 
    `image-registry.openshift-image-registry.svc:5000/holmesgpt/holmes-cli-terminal:latest`
+
+   以前 Failed した端末が残っている場合:
+
+```bash
+oc -n openshift-terminal delete dw --all
+```
+
+   Image 欄が無い / 全ユーザー既定にする場合:  
+   Administrator → Cluster Settings → Configuration → Console → Customize → Web Terminal
 
 4. ターミナル内:
 

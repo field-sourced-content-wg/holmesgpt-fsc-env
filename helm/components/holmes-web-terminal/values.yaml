@@ -11,6 +11,9 @@ webTerminal:
   # Do NOT patch cluster DevWorkspaceTemplate by default (shared RHDP clusters).
   # Users pick the ImageStream as a custom Web Terminal image in the console.
   patchClusterTemplate: false
+  # Additional namespaces whose SAs may pull the ImageStream (besides openshift-terminal).
+  # Example: ["demo"] for non-admin Web Terminals created in a user project.
+  extraPullNamespaces: []
 
 gitops:
   repoUrl: ""

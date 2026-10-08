@@ -278,6 +278,8 @@ spec:
             contextDir: {{ .Values.webTerminal.git.contextDir | quote }}
           dockerfilePath: {{ .Values.webTerminal.dockerfilePath | quote }}
           patchClusterTemplate: {{ .Values.webTerminal.patchClusterTemplate }}
+          extraPullNamespaces:
+            {{- toYaml .Values.webTerminal.extraPullNamespaces | nindent 12 }}
         gitops:
           repoUrl: {{ .Values.gitops.repoUrl | quote }}
           revision: {{ .Values.gitops.revision | quote }}

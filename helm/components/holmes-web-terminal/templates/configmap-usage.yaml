@@ -18,25 +18,28 @@ data:
 
     How to use
     ----------
-    1. Wait for the BuildConfig to succeed:
-         oc -n {{ .Values.webTerminal.namespace }} start-build {{ .Values.webTerminal.name }} --follow
+    1. Wait for BuildConfig / ImageStream:
          oc -n {{ .Values.webTerminal.namespace }} get is {{ .Values.webTerminal.name }}
+         # TAGS must include latest
 
-    2. Open the OpenShift console Web Terminal
-       (Web Terminal Operator is installed by the separate App web-terminal-operator).
+    2. Cross-namespace pull RBAC is applied by GitOps:
+         RoleBinding {{ .Values.webTerminal.name }}-openshift-terminal-puller
+       Without it, Web Terminal fails with ImagePullBackOff / authentication required.
 
-    3. Choose a custom image and paste the pullspec above.
-       (Cluster-wide DevWorkspaceTemplate is NOT patched by default — safer on shared RHDP.)
+    3. Open the OpenShift console Web Terminal.
+       - If a previous attempt Failed:
+           oc -n openshift-terminal delete dw --all
+       - Before Start, click Image and paste the pullspec above
+         (or set cluster default: Cluster Settings → Console → Customize → Web Terminal).
 
     4. In the terminal:
+         holmes version
          source holmes-demo-env
          holmes ask 'list pods in namespace {{ .Values.webTerminal.namespace }}' --model=openai/${LITEMAAS_MODEL}
-         holmes investigate alertmanager --alertmanager-url ${ALERTMANAGER_URL}
 
     Notes
     -----
     - holmes-demo-env reads Secret {{ .Values.webTerminal.namespace }}/holmes-litemaas (needs get secret).
-    - AlertManager investigate is the CLI path (not CronJob). OpenShift AM may need a token;
-      if auth fails, port-forward alertmanager-main and use http://localhost:9093 as in upstream docs.
-    - HealthCheck firing-alerts-probe verifies Prometheus-path visibility separately (Operator).
+    - Non-admin terminals in another project: add that NS to webTerminal.extraPullNamespaces.
+    - AlertManager investigate is the CLI path (not CronJob).
 {{- end }}

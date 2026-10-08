@@ -113,6 +113,8 @@ webTerminal:
   dockerfilePath: Dockerfile
   # Do not patch cluster DevWorkspaceTemplate (shared RHDP)
   patchClusterTemplate: false
+  # SAs in these namespaces may pull the ImageStream (openshift-terminal is always allowed)
+  extraPullNamespaces: []
 
 # ============================================================
 # Secrets (LiteMaaS → Holmes)
