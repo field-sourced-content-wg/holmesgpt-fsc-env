@@ -135,6 +135,10 @@ oc -n holmesgpt get rolebinding holmes-cli-terminal-openshift-terminal-puller
 GitOps が `system:image-puller` を `system:serviceaccounts:openshift-terminal` に付与します  
 （無いと `ImagePullBackOff` / `authentication required`）。
 
+イメージは **web-terminal-tooling ベース**（任意 UID で対話シェルが使える）。  
+`ubi8/python-311` 単体だと UID の shell が `/sbin/nologin` になり、コンソールは  
+「The terminal connection has closed.」になる。
+
 3. コンソールで Web Terminal を開く。**Start の前に Image** を押し、次を指定:
 
    `image-registry.openshift-image-registry.svc:5000/holmesgpt/holmes-cli-terminal:latest`

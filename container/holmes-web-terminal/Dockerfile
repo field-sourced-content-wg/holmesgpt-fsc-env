@@ -1,30 +1,36 @@
-# Custom Web Terminal image: ubi8/python-311 + holmes CLI + oc from Web Terminal tooling.
+# Web Terminal tooling base (arbitrary-UID + interactive shell) + Holmes CLI.
 #
-# - tooling has oc (RHEL8/glibc) but no Python >=3.10 module for pip holmesgpt
-# - robustadev/holmes is Alpine/musl (cannot run RHEL oc)
-# - mirror "stable" oc needs GLIBC_2.34+ (newer than UBI8)
-# → combine ubi8/python-311 with oc/kubectl copied from tooling:1.8
-ARG PYTHON_IMAGE=registry.access.redhat.com/ubi8/python-311:1
-ARG TOOLING_IMAGE=registry.redhat.io/web-terminal/web-terminal-tooling-rhel8:1.8
-
-FROM ${TOOLING_IMAGE} AS tooling
-
-FROM ${PYTHON_IMAGE}
+# ubi8/python-311 alone breaks the console session: OpenShift assigns a random
+# UID whose passwd shell is /sbin/nologin → "The terminal connection has closed."
+# Official web-terminal-tooling images are built for that UID model.
+#
+# Tooling's microdnf only has Python 3.6; holmesgpt needs >=3.10, so install
+# CPython via uv and expose `holmes` on PATH.
+ARG BASE_IMAGE=registry.redhat.io/web-terminal/web-terminal-tooling-rhel9:1.8
+FROM ${BASE_IMAGE}
 
 USER 0
 
-COPY --from=tooling /usr/bin/oc /usr/local/bin/oc
-COPY --from=tooling /usr/bin/kubectl /usr/local/bin/kubectl
-COPY --from=tooling /usr/bin/helm /usr/local/bin/helm
+ARG UV_VERSION=0.6.14
+ARG HOLMESGPT_VERSION=0.43.0
+
+ENV UV_TOOL_BIN_DIR=/usr/local/bin \
+    UV_TOOL_DIR=/opt/uv-tools \
+    UV_PYTHON_INSTALL_DIR=/opt/uv-python \
+    PATH="/usr/local/bin:${PATH}"
 
 RUN set -eux; \
-    chmod 0755 /usr/local/bin/oc /usr/local/bin/kubectl /usr/local/bin/helm; \
-    pip install --no-cache-dir 'holmesgpt==0.43.0'; \
+    curl -fsSL -o /tmp/uv.tar.gz \
+      "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"; \
+    tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1; \
+    rm -f /tmp/uv.tar.gz; \
+    uv python install 3.11; \
+    uv tool install "holmesgpt==${HOLMESGPT_VERSION}" --python 3.11; \
     holmes version; \
-    oc version --client
+    chmod -R g+rwX /opt/uv-tools /opt/uv-python /usr/local/bin/holmes || true
 
 COPY scripts/holmes-demo-env /usr/local/bin/holmes-demo-env
 RUN chmod 0755 /usr/local/bin/holmes-demo-env
 
+# Same non-root convention as the stock tooling image.
 USER 1001
-CMD ["tail", "-f", "/dev/null"]
