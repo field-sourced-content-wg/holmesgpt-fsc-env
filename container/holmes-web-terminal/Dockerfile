@@ -6,7 +6,9 @@
 #
 # Tooling's microdnf only has Python 3.6; holmesgpt needs >=3.10, so install
 # CPython via uv and expose `holmes` on PATH.
-ARG BASE_IMAGE=registry.redhat.io/web-terminal/web-terminal-tooling-rhel9:1.8
+# Pin to digest used by Web Terminal Operator DWT on this demo line (rhel9).
+# Tag "1.8" exists for rhel8 tooling, not rhel9.
+ARG BASE_IMAGE=registry.redhat.io/web-terminal/web-terminal-tooling-rhel9@sha256:f985f3d5a9940b3cf5e231d35973d5295013242d0220756241ed5c2be0744537
 FROM ${BASE_IMAGE}
 
 USER 0
