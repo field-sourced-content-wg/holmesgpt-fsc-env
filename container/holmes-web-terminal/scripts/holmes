@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper: CLI lives in the Holmes server image as holmes_cli.py (no console_script).
+# Wrapper around holmes_cli.py inside the official Holmes image layout.
 set -euo pipefail
-export PYTHONPATH="/opt/holmes/app${PYTHONPATH:+:${PYTHONPATH}}"
-exec /opt/holmes/venv/bin/python /opt/holmes/app/holmes_cli.py "$@"
+export PYTHONPATH="/app${PYTHONPATH:+:${PYTHONPATH}}"
+exec /venv/bin/python /app/holmes_cli.py "$@"
