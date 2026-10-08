@@ -35,7 +35,9 @@ holmes:
   openshift: true
   enableTelemetry: false
   operator:
-    enabled: false
+    enabled: true
+    holmesApiTimeout: 300
+    maxHistoryItems: 10
   toolsets:
     kubernetes/core:
       enabled: true
@@ -49,14 +51,62 @@ holmes:
       enabled: false
     internet:
       enabled: false
+    # OpenShift: SA token is auto-injected when openshift=true (IS_OPENSHIFT).
+    # URL points at Thanos Querier (platform monitoring).
     prometheus/metrics:
-      enabled: false
+      enabled: true
+      subtype: prometheus
+      config:
+        prometheus_url: "https://thanos-querier.openshift-monitoring.svc.cluster.local:9091"
+        verify_ssl: false
   resources:
     requests:
       cpu: 100m
       memory: 1024Mi
     limits:
       memory: 1024Mi
+
+# ============================================================
+# HealthCheck probe (Operator) — firing alerts via Prometheus
+# ============================================================
+healthCheck:
+  enabled: true
+  name: firing-alerts-probe
+  namespace: holmesgpt
+  model: litemaas
+  timeout: 120
+  mode: monitor
+  query: |
+    Using Prometheus, list currently firing alerts (prefer ALERTS{alertstate="firing"}
+    and/or alerting rules with state=firing). Summarize the top issues and likely
+    root causes. If none are firing, say so clearly and treat the check as healthy.
+
+# ============================================================
+# Holmes CLI Web Terminal (BuildConfig → ImageStream)
+# ============================================================
+# Web Terminal Operator (separate App → openshift-operators)
+webTerminalOperator:
+  enabled: true
+  name: web-terminal
+  namespace: openshift-operators
+  channel: fast
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic
+
+# Holmes CLI tooling image (BuildConfig in holmesgpt)
+webTerminal:
+  enabled: true
+  namespace: holmesgpt
+  name: holmes-cli-terminal
+  git:
+    # Empty → use gitops.repoUrl / revision
+    uri: ""
+    revision: ""
+    contextDir: container/holmes-web-terminal
+  dockerfilePath: Dockerfile
+  # Do not patch cluster DevWorkspaceTemplate (shared RHDP)
+  patchClusterTemplate: false
 
 # ============================================================
 # Secrets (LiteMaaS → Holmes)

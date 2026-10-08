@@ -1,0 +1,9 @@
+operator:
+  enabled: true
+  name: web-terminal
+  namespace: openshift-operators
+  channel: fast
+  # CatalogSource in openshift-marketplace
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

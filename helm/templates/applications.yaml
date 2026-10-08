@@ -69,6 +69,12 @@ spec:
           - {{ .Values.holmes.secretName }}
         operator:
           enabled: {{ .Values.holmes.operator.enabled }}
+          {{- if .Values.holmes.operator.holmesApiTimeout }}
+          holmesApiTimeout: {{ .Values.holmes.operator.holmesApiTimeout }}
+          {{- end }}
+          {{- if .Values.holmes.operator.maxHistoryItems }}
+          maxHistoryItems: {{ .Values.holmes.operator.maxHistoryItems }}
+          {{- end }}
         toolsets:
           {{- toYaml .Values.holmes.toolsets | nindent 10 }}
         resources:
@@ -96,6 +102,53 @@ spec:
         duration: 30s
         factor: 2
         maxDuration: 3m
+{{- end }}
+
+{{- if .Values.healthCheck.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-holmes-healthcheck
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/holmes-healthcheck
+    helm:
+      valuesObject:
+        healthCheck:
+          enabled: {{ .Values.healthCheck.enabled }}
+          name: {{ .Values.healthCheck.name }}
+          namespace: {{ .Values.healthCheck.namespace }}
+          model: {{ .Values.healthCheck.model | quote }}
+          timeout: {{ .Values.healthCheck.timeout }}
+          mode: {{ .Values.healthCheck.mode | quote }}
+          query: {{ .Values.healthCheck.query | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.healthCheck.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 8
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m
 {{- end }}
 
 {{- if .Values.route.enabled }}
@@ -146,4 +199,101 @@ spec:
         duration: 15s
         factor: 2
         maxDuration: 2m
+{{- end }}
+
+{{- if .Values.webTerminalOperator.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-web-terminal-operator
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/web-terminal-operator
+    helm:
+      valuesObject:
+        operator:
+          enabled: {{ .Values.webTerminalOperator.enabled }}
+          name: {{ .Values.webTerminalOperator.name }}
+          namespace: {{ .Values.webTerminalOperator.namespace }}
+          channel: {{ .Values.webTerminalOperator.channel | quote }}
+          source: {{ .Values.webTerminalOperator.source | quote }}
+          sourceNamespace: {{ .Values.webTerminalOperator.sourceNamespace | quote }}
+          installPlanApproval: {{ .Values.webTerminalOperator.installPlanApproval }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.webTerminalOperator.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 3m
+{{- end }}
+
+{{- if .Values.webTerminal.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-holmes-web-terminal
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/holmes-web-terminal
+    helm:
+      valuesObject:
+        webTerminal:
+          enabled: {{ .Values.webTerminal.enabled }}
+          namespace: {{ .Values.webTerminal.namespace }}
+          name: {{ .Values.webTerminal.name }}
+          git:
+            uri: {{ .Values.webTerminal.git.uri | default .Values.gitops.repoUrl | quote }}
+            revision: {{ .Values.webTerminal.git.revision | default .Values.gitops.revision | quote }}
+            contextDir: {{ .Values.webTerminal.git.contextDir | quote }}
+          dockerfilePath: {{ .Values.webTerminal.dockerfilePath | quote }}
+          patchClusterTemplate: {{ .Values.webTerminal.patchClusterTemplate }}
+        gitops:
+          repoUrl: {{ .Values.gitops.repoUrl | quote }}
+          revision: {{ .Values.gitops.revision | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.webTerminal.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 3m
 {{- end }}

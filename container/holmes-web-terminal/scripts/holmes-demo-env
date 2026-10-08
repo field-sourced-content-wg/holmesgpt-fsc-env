@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Load LiteMaaS credentials from the FSC Secret into the current shell.
+# Usage:  source holmes-demo-env
+#         holmes-demo-env   (prints export lines)
+set -euo pipefail
+
+NS="${HOLMES_NAMESPACE:-holmesgpt}"
+SECRET="${HOLMES_SECRET:-holmes-litemaas}"
+AM_URL="${ALERTMANAGER_URL:-https://alertmanager-main.openshift-monitoring.svc:9094}"
+
+if ! command -v oc >/dev/null 2>&1; then
+  echo "oc not found; cannot load secret ${NS}/${SECRET}" >&2
+  return 1 2>/dev/null || exit 1
+fi
+
+KEY=$(oc -n "${NS}" get secret "${SECRET}" -o jsonpath='{.data.OPENAI_API_KEY}' | base64 -d)
+BASE=$(oc -n "${NS}" get secret "${SECRET}" -o jsonpath='{.data.OPENAI_API_BASE}' | base64 -d)
+MODEL=$(oc -n "${NS}" get secret "${SECRET}" -o jsonpath='{.data.LITEMAAS_MODEL}' 2>/dev/null | base64 -d || true)
+MODEL="${MODEL:-gpt-4o-mini}"
+
+if [[ "${BASH_SOURCE[0]:-}" != "${0}" ]]; then
+  export OPENAI_API_KEY="${KEY}"
+  export OPENAI_API_BASE="${BASE}"
+  export LITEMAAS_MODEL="${MODEL}"
+  export ALERTMANAGER_URL="${AM_URL}"
+  echo "Loaded LiteMaaS env from ${NS}/${SECRET} (model=${MODEL})"
+  echo "Examples:"
+  echo "  holmes ask 'list pods in namespace ${NS}' --model=openai/${MODEL}"
+  echo "  holmes investigate alertmanager --alertmanager-url ${AM_URL}"
+else
+  cat <<EOF
+export OPENAI_API_KEY='${KEY}'
+export OPENAI_API_BASE='${BASE}'
+export LITEMAAS_MODEL='${MODEL}'
+export ALERTMANAGER_URL='${AM_URL}'
+EOF
+fi

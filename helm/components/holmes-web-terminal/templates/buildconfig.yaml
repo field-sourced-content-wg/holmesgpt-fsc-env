@@ -1,0 +1,36 @@
+{{- if .Values.webTerminal.enabled }}
+{{- $gitUri := .Values.webTerminal.git.uri | default .Values.gitops.repoUrl }}
+{{- if not $gitUri }}
+{{- fail "webTerminal.git.uri or gitops.repoUrl must be set for BuildConfig" }}
+{{- end }}
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.webTerminal.name }}
+  namespace: {{ .Values.webTerminal.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+    app: holmes-cli-terminal
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  runPolicy: Serial
+  source:
+    type: Git
+    git:
+      uri: {{ $gitUri | quote }}
+      ref: {{ .Values.webTerminal.git.revision | default .Values.gitops.revision | quote }}
+    contextDir: {{ .Values.webTerminal.git.contextDir | quote }}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: {{ .Values.webTerminal.dockerfilePath | quote }}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ printf "%s:latest" .Values.webTerminal.name | quote }}
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+{{- end }}

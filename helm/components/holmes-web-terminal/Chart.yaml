@@ -1,0 +1,6 @@
+apiVersion: v2
+name: holmes-web-terminal
+description: Build Holmes CLI Web Terminal tooling image (ImageStream + BuildConfig)
+type: application
+version: 0.1.0
+appVersion: "1.0"

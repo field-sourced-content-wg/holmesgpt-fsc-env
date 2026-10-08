@@ -1,0 +1,16 @@
+healthCheck:
+  enabled: true
+  name: firing-alerts-probe
+  namespace: holmesgpt
+  # modelList key from parent values (LiteMaaS). Empty → Holmes default model.
+  model: litemaas
+  timeout: 120
+  mode: monitor
+  query: |
+    Using Prometheus, list currently firing alerts (prefer ALERTS{alertstate="firing"}
+    and/or alerting rules with state=firing). Summarize the top issues and likely
+    root causes. If none are firing, say so clearly and treat the check as healthy.
+
+# Passed through for local helm template; parent App of Apps overrides.
+gitops:
+  repoUrl: ""

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: holmes-healthcheck
+description: Sample HealthCheck to verify Prometheus firing-alerts visibility via Operator
+type: application
+version: 0.1.0
+appVersion: "1.0"

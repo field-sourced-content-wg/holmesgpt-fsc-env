@@ -1,0 +1,15 @@
+{{- if .Values.webTerminal.enabled }}
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ .Values.webTerminal.name }}
+  namespace: {{ .Values.webTerminal.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+    app: holmes-cli-terminal
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  lookupPolicy:
+    local: true
+{{- end }}

@@ -1,0 +1,42 @@
+{{- if .Values.webTerminal.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.webTerminal.name }}-usage
+  namespace: {{ .Values.webTerminal.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+    app: holmes-cli-terminal
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+data:
+  README.txt: |
+    Holmes CLI Web Terminal image (built by BuildConfig in this namespace).
+
+    Image (in-cluster pullspec):
+      image-registry.openshift-image-registry.svc:5000/{{ .Values.webTerminal.namespace }}/{{ .Values.webTerminal.name }}:latest
+
+    How to use
+    ----------
+    1. Wait for the BuildConfig to succeed:
+         oc -n {{ .Values.webTerminal.namespace }} start-build {{ .Values.webTerminal.name }} --follow
+         oc -n {{ .Values.webTerminal.namespace }} get is {{ .Values.webTerminal.name }}
+
+    2. Open the OpenShift console Web Terminal
+       (Web Terminal Operator is installed by the separate App web-terminal-operator).
+
+    3. Choose a custom image and paste the pullspec above.
+       (Cluster-wide DevWorkspaceTemplate is NOT patched by default — safer on shared RHDP.)
+
+    4. In the terminal:
+         source holmes-demo-env
+         holmes ask 'list pods in namespace {{ .Values.webTerminal.namespace }}' --model=openai/${LITEMAAS_MODEL}
+         holmes investigate alertmanager --alertmanager-url ${ALERTMANAGER_URL}
+
+    Notes
+    -----
+    - holmes-demo-env reads Secret {{ .Values.webTerminal.namespace }}/holmes-litemaas (needs get secret).
+    - AlertManager investigate is the CLI path (not CronJob). OpenShift AM may need a token;
+      if auth fails, port-forward alertmanager-main and use http://localhost:9093 as in upstream docs.
+    - HealthCheck firing-alerts-probe verifies Prometheus-path visibility separately (Operator).
+{{- end }}

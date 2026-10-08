@@ -1,0 +1,17 @@
+webTerminal:
+  enabled: true
+  namespace: holmesgpt
+  name: holmes-cli-terminal
+  # Git source for BuildConfig (parent App of Apps overrides from gitops.repoUrl)
+  git:
+    uri: ""
+    revision: main
+    contextDir: container/holmes-web-terminal
+  dockerfilePath: Dockerfile
+  # Do NOT patch cluster DevWorkspaceTemplate by default (shared RHDP clusters).
+  # Users pick the ImageStream as a custom Web Terminal image in the console.
+  patchClusterTemplate: false
+
+gitops:
+  repoUrl: ""
+  revision: main

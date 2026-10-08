@@ -1,0 +1,21 @@
+{{- if .Values.healthCheck.enabled }}
+apiVersion: holmesgpt.dev/v1alpha1
+kind: HealthCheck
+metadata:
+  name: {{ .Values.healthCheck.name }}
+  namespace: {{ .Values.healthCheck.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+    app: holmes
+    holmesgpt.demo/probe: firing-alerts
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  query: {{ .Values.healthCheck.query | quote }}
+  timeout: {{ .Values.healthCheck.timeout }}
+  mode: {{ .Values.healthCheck.mode | quote }}
+  {{- if .Values.healthCheck.model }}
+  model: {{ .Values.healthCheck.model | quote }}
+  {{- end }}
+{{- end }}
