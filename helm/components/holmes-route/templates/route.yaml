@@ -1,0 +1,33 @@
+{{- if .Values.route.enabled }}
+{{- $host := .Values.route.host }}
+{{- if and (not $host) .Values.deployer.domain }}
+{{- $host = printf "%s-%s.%s" .Values.route.name .Values.route.namespace .Values.deployer.domain }}
+{{- end }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.route.name }}
+  namespace: {{ .Values.route.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+    app: holmes
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  {{- if $host }}
+  host: {{ $host | quote }}
+  {{- end }}
+  to:
+    kind: Service
+    name: {{ .Values.route.serviceName }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- if .Values.route.tls }}
+  tls:
+    termination: {{ .Values.route.tls.termination }}
+    insecureEdgeTerminationPolicy: {{ .Values.route.tls.insecureEdgeTerminationPolicy }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}

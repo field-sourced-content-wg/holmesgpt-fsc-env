@@ -68,6 +68,24 @@ secrets:
   type: Opaque
 
 # ============================================================
+# OpenShift Route (Holmes Service is ClusterIP only)
+# ============================================================
+route:
+  enabled: true
+  name: holmes
+  namespace: holmesgpt
+  # Must match Holmes Helm releaseName + "-holmes"
+  serviceName: holmes-holmes
+  servicePort: 80
+  # Empty host + deployer.domain → holmes-holmesgpt.<domain>
+  # Empty host and empty domain → OpenShift auto-assigns
+  host: ""
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+
+# ============================================================
 # Values injected by field content workload (do not modify)
 # ============================================================
 deployer:

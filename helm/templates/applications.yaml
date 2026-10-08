@@ -97,3 +97,53 @@ spec:
         factor: 2
         maxDuration: 3m
 {{- end }}
+
+{{- if .Values.route.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-holmes-route
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/holmes-route
+    helm:
+      valuesObject:
+        route:
+          enabled: {{ .Values.route.enabled }}
+          name: {{ .Values.route.name }}
+          namespace: {{ .Values.route.namespace }}
+          serviceName: {{ .Values.route.serviceName }}
+          servicePort: {{ .Values.route.servicePort }}
+          host: {{ .Values.route.host | quote }}
+          tls:
+            termination: {{ .Values.route.tls.termination }}
+            insecureEdgeTerminationPolicy: {{ .Values.route.tls.insecureEdgeTerminationPolicy }}
+        deployer:
+          domain: {{ .Values.deployer.domain | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.route.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 2m
+{{- end }}

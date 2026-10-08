@@ -1,0 +1,17 @@
+route:
+  enabled: true
+  name: holmes
+  namespace: holmesgpt
+  # Service created by robusta/holmes chart: {releaseName}-holmes
+  serviceName: holmes-holmes
+  servicePort: 80
+  # Host left empty → OpenShift generates <name>-<namespace>.<cluster-domain>
+  # Or set host: holmes.apps.example.com when deployer.domain is known
+  host: ""
+  tls:
+    # edge: router terminates TLS, backend is plain HTTP (Holmes default)
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+deployer:
+  domain: ""

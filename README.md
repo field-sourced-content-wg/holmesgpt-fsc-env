@@ -14,20 +14,22 @@ helm/                         # App of Apps（Argo CD）
 ├── values.yaml               # 中央設定 + litemaas 受け皿
 ├── templates/applications.yaml
 └── components/
-    └── holmes-secrets/       # LiteMaaS → Secret
+    ├── holmes-secrets/       # LiteMaaS → Secret
+    └── holmes-route/         # OpenShift Route → Holmes Service
 ```
 
 | コンポーネント | 内容 |
 |----------------|------|
 | `holmes-secrets` | FSC 注入の `litemaas.*` を Secret に載せる |
 | `holmes`（外部 chart） | `robusta/holmes` を Argo CD が直接デプロイ |
+| `holmes-route` | Service `holmes-holmes` への Route（edge TLS） |
 
 含まないもの（意図的）:
 
 - Showroom（後続）
 - Ansible post-deploy
-- OpenShift Route（必要になったら追加。公式 chart は Route を作らない）
 - Holmes Operator / HealthCheck（Phase 1 以降）
+
 
 ## 前提
 
@@ -57,24 +59,26 @@ helm template holmesgpt-fsc . \
 ### Smoke（クラスタ上）
 
 ```bash
-# Service 名は release 名に依存。デフォルト想定: holmes / namespace holmesgpt
-oc -n holmesgpt port-forward svc/holmes-holmes 8080:80
+# Route ホストを取得
+HOST=$(oc -n holmesgpt get route holmes -o jsonpath='{.spec.host}')
 
-curl -sS -X POST http://localhost:8080/api/chat \
+curl -sS -X POST "https://${HOST}/api/chat" \
   -H 'Content-Type: application/json' \
   -d '{"ask":"list pods in namespace default","model":"litemaas"}'
 ```
 
-`model` は `values.yaml` の `holmes.modelList` キー（デフォルト `litemaas`）と一致させる。
+`model` は `values.yaml` の `holmes.modelKey`（デフォルト `litemaas`）と一致させる。
+
+port-forward でも可: `oc -n holmesgpt port-forward svc/holmes-holmes 8080:80`
 
 ## Phase 計画（メモ）
 
 | Phase | 内容 |
 |-------|------|
-| **0（本リポ）** | Holmes API + LiteMaaS + port-forward smoke |
+| **0（本リポ）** | Holmes API + LiteMaaS + Route |
 | 1 | Holmes Operator + `HealthCheck`（`mode: monitor`、Slack なし） |
 | 2 | Prometheus / Alertmanager 連携 |
-| 3 | Route / Showroom（必要なら） |
+| 3 | Showroom（必要なら） |
 
 ## 参考
 
