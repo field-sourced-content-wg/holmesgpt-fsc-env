@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Wrapper around holmes_cli.py inside the official Holmes image layout.
-set -euo pipefail
-export PYTHONPATH="/app${PYTHONPATH:+:${PYTHONPATH}}"
-exec /venv/bin/python /app/holmes_cli.py "$@"
