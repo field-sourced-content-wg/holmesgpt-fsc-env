@@ -1,0 +1,10 @@
+secrets:
+  enabled: true
+  name: holmes-litemaas
+  namespace: holmesgpt
+  type: Opaque
+
+litemaas:
+  apiKey: ""
+  apiUrl: ""
+  model: ""

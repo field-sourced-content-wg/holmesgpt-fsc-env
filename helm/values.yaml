@@ -1,0 +1,85 @@
+# holmesgpt-fsc-env - App of Apps
+# Argo CD で holmes-secrets と robusta/holmes をデプロイする
+
+# ============================================================
+# GitOps Configuration
+# ============================================================
+gitops:
+  # UPDATE: このリポジトリの clone URL
+  repoUrl: "https://github.com/field-sourced-content-wg/holmesgpt-fsc-env.git"
+  revision: "main"
+  basePath: "helm"
+
+argocd:
+  namespace: openshift-gitops
+  project: default
+
+# ============================================================
+# HolmesGPT
+# ============================================================
+holmes:
+  enabled: true
+  # Argo CD Application / Helm release 名（Service は {name}-holmes）
+  name: holmes
+  namespace: holmesgpt
+  # robusta Helm repository
+  chart:
+    repoURL: "https://robusta-charts.storage.googleapis.com"
+    name: holmes
+    # Pin for reproducibility. Bump deliberately after testing.
+    version: "0.43.0"
+  # Secret created by components/holmes-secrets
+  secretName: holmes-litemaas
+  # modelList のキー。/api/chat の "model" に使う
+  modelKey: litemaas
+  openshift: true
+  enableTelemetry: false
+  operator:
+    enabled: false
+  toolsets:
+    kubernetes/core:
+      enabled: true
+    kubernetes/logs:
+      enabled: true
+    openshift/core:
+      enabled: true
+    openshift/logs:
+      enabled: true
+    robusta:
+      enabled: false
+    internet:
+      enabled: false
+    prometheus/metrics:
+      enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1024Mi
+    limits:
+      memory: 1024Mi
+
+# ============================================================
+# Secrets (LiteMaaS → Holmes)
+# ============================================================
+secrets:
+  enabled: true
+  name: holmes-litemaas
+  namespace: holmesgpt
+  type: Opaque
+
+# ============================================================
+# Values injected by field content workload (do not modify)
+# ============================================================
+deployer:
+  domain: ""
+  apiUrl: ""
+
+fieldContent:
+  deploymentType: "helm"
+
+# RHDP / Field Content が注文時に埋める
+litemaas:
+  enabled: true
+  apiUrl: ""
+  apiKey: ""
+  model: ""

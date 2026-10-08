@@ -1,0 +1,9 @@
+apiVersion: v2
+name: holmesgpt-fsc-env
+description: App of Apps - HolmesGPT on OpenShift via RHDP Field Content
+type: application
+version: 0.1.0
+appVersion: "0.43.0"
+maintainers:
+  - name: Field Content Developer
+    email: developer@redhat.com

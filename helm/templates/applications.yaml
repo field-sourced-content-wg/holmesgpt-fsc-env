@@ -1,0 +1,99 @@
+# App of Apps — generates Argo CD Applications for each enabled component
+{{- if .Values.secrets.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-holmes-secrets
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/holmes-secrets
+    helm:
+      valuesObject:
+        secrets:
+          enabled: {{ .Values.secrets.enabled }}
+          name: {{ .Values.secrets.name }}
+          namespace: {{ .Values.secrets.namespace }}
+          type: {{ .Values.secrets.type }}
+        litemaas:
+          apiKey: {{ .Values.litemaas.apiKey | quote }}
+          apiUrl: {{ .Values.litemaas.apiUrl | quote }}
+          model: {{ .Values.litemaas.model | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.secrets.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+
+{{- if .Values.holmes.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-holmes
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "holmesgpt-fsc"
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    chart: {{ .Values.holmes.chart.name }}
+    repoURL: {{ .Values.holmes.chart.repoURL }}
+    targetRevision: {{ .Values.holmes.chart.version | quote }}
+    helm:
+      releaseName: {{ .Values.holmes.name }}
+      valuesObject:
+        openshift: {{ .Values.holmes.openshift }}
+        enableTelemetry: {{ .Values.holmes.enableTelemetry }}
+        createServiceAccount: true
+        extraEnvVarsSecrets:
+          - {{ .Values.holmes.secretName }}
+        operator:
+          enabled: {{ .Values.holmes.operator.enabled }}
+        toolsets:
+          {{- toYaml .Values.holmes.toolsets | nindent 10 }}
+        resources:
+          {{- toYaml .Values.holmes.resources | nindent 10 }}
+        modelList:
+          {{ .Values.holmes.modelKey }}:
+            # envRef:* is rewritten by the Holmes chart at render time
+            # (keeps parent App-of-Apps templating from consuming env placeholders).
+            api_key: "envRef:OPENAI_API_KEY"
+            api_base: "envRef:OPENAI_API_BASE"
+            model: openai/{{ required "litemaas.model must be set (FSC injects it)" .Values.litemaas.model }}
+            temperature: 0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.holmes.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 3m
+{{- end }}
